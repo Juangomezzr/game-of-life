@@ -76,6 +76,60 @@ impl Grid {
         
     }
 
+    pub fn set_glider(&mut self){
+        self.grid[1][2] = 1;
+        self.grid[2][3] = 1;
+        self.grid[3][1] = 1;
+        self.grid[3][2] = 1;
+        self.grid[3][3] = 1;
+    }
+
+    pub fn set_blinker(&mut self){
+        self.grid[10][9] = 1;
+        self.grid[10][10] = 1;
+        self.grid[10][11] = 1;
+    }
+
+    pub fn set_medusa(&mut self){
+        let mid_x = self.size / 2;
+        let mid_y = self.size / 2;
+        let cells = [
+            (mid_y - 4, mid_x - 2),
+            (mid_y - 4, mid_x - 1),
+            (mid_y - 4, mid_x),
+            (mid_y - 4, mid_x + 1),
+            (mid_y - 4, mid_x + 2),
+            (mid_y - 3, mid_x - 3),
+            (mid_y - 3, mid_x + 3),
+            (mid_y - 2, mid_x - 3),
+            (mid_y - 2, mid_x - 1),
+            (mid_y - 2, mid_x),
+            (mid_y - 2, mid_x + 1),
+            (mid_y - 2, mid_x + 3),
+            (mid_y - 1, mid_x - 2),
+            (mid_y - 1, mid_x + 2),
+            (mid_y, mid_x - 2),
+            (mid_y + 1, mid_x - 2),
+            (mid_y + 2, mid_x - 3),
+            (mid_y + 2, mid_x - 1),
+            (mid_y + 2, mid_x + 1),
+            (mid_y + 2, mid_x + 3),
+            (mid_y + 3, mid_x - 3),
+            (mid_y + 3, mid_x - 1),
+            (mid_y + 3, mid_x + 1),
+            (mid_y + 3, mid_x + 3),
+            (mid_y + 4, mid_x - 4),
+            (mid_y + 4, mid_x - 2),
+            (mid_y + 4, mid_x),
+            (mid_y + 4, mid_x + 2),
+            (mid_y + 4, mid_x + 4),
+        ];
+
+        for (y, x) in cells {
+            self.grid[y][x] = 1;
+        }
+    }
+
   
     
 }
