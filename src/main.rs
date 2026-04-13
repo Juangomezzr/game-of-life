@@ -1,93 +1,87 @@
-
-
-const SIZE: usize = 20;
-
-
-
-
+mod grid;
+use grid::*;
+use nannou::prelude::*;
 fn main() {
-
-
-
-    let mut grid: [[i32; SIZE]; SIZE] = [[0; SIZE]; SIZE];
-
-    grid[1][2] = 1;
-    grid[2][3] = 1;
-    grid[3][1] = 1;
-    grid[3][2] = 1;
-    grid[3][3] = 1;
     
+    
+    
+   
+    
+    /*/
     for step_i in 0..10 {
         println!("Paso {step_i}");
-        step(&mut grid);
+        grid.step();
         println!("----------------");
     }
+    */
 
-
+    nannou::app(model).run()
 
 
 }
 
-
-fn step(grid: &mut [[i32; SIZE]; SIZE]) {
-    let mut next: [[i32; SIZE]; SIZE] = [[0; SIZE]; SIZE];
-
-    for y in 0..SIZE {
-        for x in 0..SIZE {
-            let count = check_sides(x as isize, y as isize, &grid);
-
-            let live = grid[y][x];
-
-            if live == 1 {
-                if count == 2 || count == 3 {
-                    next[y][x] = 1;
-                } else {
-                    next[y][x] = 0
-                }
-            } else {
-                if count == 3 {
-                    next[y][x] = 1;
-                }
-            }
-
-
-        }
-    }
-
-    std::mem::swap(grid, &mut next);
-    print_grid(&grid);
+struct Model {
+    grid: Grid
 }
 
-fn check_sides(x: isize, y: isize, grid: &[[i32; SIZE]; SIZE]) -> i32 {
-    let mut count = 0;
+fn model(app: &App) -> Model {
 
-    let start: (isize, isize) = (x - 1, y - 1);
+    app.new_window()
+        .size(800, 800)
+        .resizable(false)
+        .view(view)
+        .build()
+        .unwrap();
 
-    for i in 0..3 {
-        for j in 0..3 {
-            if i == 1 && j == 1 {
-                continue;
-            }
-            let n_x = start.0 + i;
-            let n_y = start.1 + j;
 
-            if n_x < 0 || n_x >= SIZE as isize || n_y < 0 || n_y >= SIZE as isize {
-                continue;
-            }
-            count += grid[n_y as usize][n_x as usize];
-        }
-    }
+    let mut grid = Grid::new();
 
-    count
+    grid.grid[1][2] = 1;
+    grid.grid[2][3] = 1;
+    grid.grid[3][1] = 1;
+    grid.grid[3][2] = 1;
+    grid.grid[3][3] = 1;
+
+    Model {grid: grid}
+
+
 }
 
-fn print_grid(grid: &[[i32; SIZE]; SIZE]) {
-    for y in 0..SIZE {
-        let mut row = String::with_capacity(SIZE * 2);
-        for x in 0..SIZE {
-            row.push(if grid[y][x] == 0 { '.' } else { '#' });
-            row.push(' ');
+fn update(_app: &App, _model: &mut Model, _update: Update) {
+}
+
+fn view(app: &App,model: &Model,frame: Frame){
+    let draw = app.draw();
+    let win = app.window_rect();
+    let size = model.grid.size;
+    let cell_size = win.w()/size as f32;
+
+
+    draw.background().color(GRAY);
+    draw.to_frame(app, &frame).unwrap();
+    
+    
+    
+
+        for y in 0..size {
+            for x in 0..size {
+
+                let alive = model.grid.grid[y][x] == 1;
+
+                let px = win.left() + cell_size * x as f32 + cell_size / 2.0;
+                let py = win.top() - cell_size * y as f32 - cell_size / 2.0;
+
+
+                draw.rect()
+                .x_y(px, py)
+                .w_h(cell_size - 1.0, cell_size - 1.0)
+                .color(if alive { BLACK } else { LIGHTGRAY });
+                
+            }
         }
-        println!("{}", row);
-    }
+        draw.to_frame(app, &frame).unwrap();    
+
+    
+    
+
 }
