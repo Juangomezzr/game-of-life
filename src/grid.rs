@@ -73,7 +73,7 @@ impl Grid {
         }
 
         std::mem::swap(&mut self.grid, &mut next);
-        self.print_grid();
+        
     }
 
   
