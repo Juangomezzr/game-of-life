@@ -1,20 +1,20 @@
-const SIZE: usize = 50;
+const SIZE: usize = 600;
 
 pub struct Grid {
     pub size: usize,
-    pub grid: [[u32; SIZE]; SIZE],
+    pub grid: Box<[[u8; SIZE]; SIZE]>,
 }
 impl Grid {
     pub fn new() -> Grid {
         Grid {
             size: SIZE,
-            grid: [[0; SIZE]; SIZE],
+            grid: Box::new([[0; SIZE]; SIZE]),
         }    
     }
 
-    fn check_sides(&self, x: isize, y: isize) -> u32 {
+    fn check_sides(&self, x: isize, y: isize) -> u8 {
         let mut count = 0;
-        let grid = self.grid;
+        let grid = &self.grid;
         let start: (isize, isize) = (x - 1, y - 1);
 
         for i in 0..3 {
@@ -37,11 +37,10 @@ impl Grid {
     }
 
     fn print_grid(&self) {
-        let grid = self.grid;
         for y in 0..SIZE {
             let mut row = String::with_capacity(SIZE * 2);
             for x in 0..SIZE {
-                row.push(if grid[y][x] == 0 { '.' } else { '#' });
+                row.push(if self.grid[y][x] == 0 { '.' } else { '#' });
                 row.push(' ');
             }
             println!("{}", row);
@@ -49,8 +48,7 @@ impl Grid {
     }
 
     pub fn step(&mut self) {
-        
-        let mut next: [[u32; SIZE]; SIZE] = [[0; SIZE]; SIZE];
+        let mut next = Box::new([[0; SIZE]; SIZE]);
 
         for y in 0..SIZE {
             for x in 0..SIZE {

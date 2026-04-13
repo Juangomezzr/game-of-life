@@ -10,7 +10,9 @@ fn main() {
     }
     */
 
-    nannou::app(model).update(update).run()
+    nannou::app(model) 
+        .update(update)
+        .run()
 }
 
 struct Model {
@@ -18,12 +20,14 @@ struct Model {
 }
 
 fn model(app: &App) -> Model {
-    app.new_window()
-        .size(800, 800)
+    app
+        .new_window()
+        .size(1000, 1000)
         .resizable(false)
         .view(view)
         .build()
         .unwrap();
+    app.set_loop_mode(LoopMode::rate_fps(30.0));
 
     let mut grid = Grid::new();
 
@@ -33,6 +37,7 @@ fn model(app: &App) -> Model {
 }
 
 fn update(_app: &App, model: &mut Model, _update: Update) {
+    
     model.grid.step();
 }
 
@@ -40,14 +45,15 @@ fn view(app: &App, model: &Model, frame: Frame) {
     let draw = app.draw();
     let win = app.window_rect();
     let size = model.grid.size;
-    let cell_size = win.w() / size as f32;
+    let cell_size = win.w() / size  as f32;
 
-    draw.background().color(GRAY);
+    draw.background().color(LIGHTGRAY);
     draw.to_frame(app, &frame).unwrap();
-
     for y in 0..size {
         for x in 0..size {
-            let alive = model.grid.grid[y][x] == 1;
+            if model.grid.grid[y][x] == 0 {
+                continue;
+            }
 
             let px = win.left() + cell_size * x as f32 + cell_size / 2.0;
             let py = win.top() - cell_size * y as f32 - cell_size / 2.0;
@@ -55,8 +61,9 @@ fn view(app: &App, model: &Model, frame: Frame) {
             draw.rect()
                 .x_y(px, py)
                 .w_h(cell_size - 1.0, cell_size - 1.0)
-                .color(if alive { BLACK } else { LIGHTGRAY });
+                .color(BLACK);
         }
     }
+
     draw.to_frame(app, &frame).unwrap();
 }
