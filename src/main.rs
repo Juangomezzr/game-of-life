@@ -15,7 +15,7 @@ fn main() {
     }
     */
 
-    nannou::app(model).run()
+    nannou::app(model).update(update).run()
 
 
 }
@@ -47,7 +47,8 @@ fn model(app: &App) -> Model {
 
 }
 
-fn update(_app: &App, _model: &mut Model, _update: Update) {
+fn update(_app: &App, model: &mut Model, _update: Update) {
+    model.grid.step();
 }
 
 fn view(app: &App,model: &Model,frame: Frame){
