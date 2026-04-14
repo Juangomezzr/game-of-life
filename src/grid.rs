@@ -1,8 +1,22 @@
 use std::usize;
+use rayon::prelude::*;
 
 
-const SIZE: usize = 1000;
+const SIZE: usize = 180;
 
+fn rules(count: u8, live: u8) -> u8{
+    if live == 1 {
+        if count == 2 || count == 3 { 
+            1 
+        } else { 
+            0 
+        }
+    } else if count == 3 {
+        1
+    } else {
+        0
+    }
+}
 
 pub struct Grid {
     pub size: usize,
@@ -16,9 +30,9 @@ impl Grid {
         }    
     }
 
-    fn check_sides(&self, x: isize, y: isize) -> u8 {
+    fn check_sides(grid: &[u8], x: isize, y: isize) -> u8 {
         let mut count = 0;
-        let grid = &self.grid;
+        
         let start: (isize, isize) = (x - 1, y - 1);
 
         for i in 0..3 {
@@ -33,7 +47,7 @@ impl Grid {
                 if n_x < 0 || n_x >= SIZE as isize || n_y < 0 || n_y >= SIZE as isize {
                     continue;
                 }
-                count += grid[n_x as usize + SIZE * n_y as usize];
+                count += (grid[n_x as usize + SIZE * n_y as usize] > 0) as u8;
             }
         }
 
@@ -52,29 +66,23 @@ impl Grid {
     }
 
     pub fn step(&mut self) {
+        let current = self.grid.clone();
         let mut next = vec![0;SIZE * SIZE];
 
-        for y in 0..SIZE {
+        next.par_chunks_mut(SIZE)
+        .enumerate()
+        .for_each(|(y, row)| {
             for x in 0..SIZE {
-                let count = self.check_sides(x as isize, y as isize);
+                let idx = x + y * SIZE;
+                let count = Self::check_sides(&current, x as isize, y as isize);
+                let live = current[idx];
 
-                let live = self.grid[x + y *SIZE];
 
-                if live == 1 {
-                    if count == 2 || count == 3 {
-                        next[x + y * SIZE] = 1;
-                    } else {
-                        next[x + y *SIZE] = 0
-                    }
-                } else {
-                    if count == 3 {
-                        next[x + y * SIZE] = 1;
-                    }
-                }
+                row[x] = rules(count, live) ;
             }
-        }
+        });
 
-        std::mem::swap(&mut self.grid, &mut next);
+    self.grid = next;
         
     }
 
@@ -82,9 +90,33 @@ impl Grid {
         self.grid[x + y * SIZE] = value
     }
 
+    fn set_block_at(&mut self, x: usize, y: usize) {
+        self.set_pixel(x, y, 1);
+        self.set_pixel(x + 1, y, 1);
+        self.set_pixel(x, y + 1, 1);
+        self.set_pixel(x + 1, y + 1, 1);
+    }
+
+    fn set_beehive_at(&mut self, x: usize, y: usize) {
+        self.set_pixel(x + 1, y, 1);
+        self.set_pixel(x + 2, y, 1);
+        self.set_pixel(x, y + 1, 1);
+        self.set_pixel(x + 3, y + 1, 1);
+        self.set_pixel(x + 1, y + 2, 1);
+        self.set_pixel(x + 2, y + 2, 1);
+    }
+
+    fn set_tub_at(&mut self, x: usize, y: usize) {
+        self.set_pixel(x + 1, y, 1);
+        self.set_pixel(x, y + 1, 1);
+        self.set_pixel(x + 2, y + 1, 1);
+        self.set_pixel(x + 1, y + 2, 1);
+    }
+
     fn read_pixel(&self, x: usize, y: usize) -> u8{
         self.grid[x + y * SIZE]
     }
+
 
     pub fn set_glider(&mut self){
         self.set_pixel(1, 2, 1);
@@ -137,6 +169,45 @@ impl Grid {
 
         for (x, y) in cells {
             self.set_pixel(x, y, 1);
+        }
+            
+    }
+
+    pub fn set_stable_colony(&mut self) {
+        let mid_x = self.size as isize / 2;
+        let mid_y = self.size as isize / 2;
+
+        let blocks = [
+            (-30, -30), (-18, -30), (-6, -30), (6, -30), (18, -30), (30, -30),
+            (-30, -18), (30, -18),
+            (-30, -6), (-6, -6), (6, -6), (30, -6),
+            (-30, 6), (-6, 6), (6, 6), (30, 6),
+            (-30, 18), (30, 18),
+            (-30, 30), (-18, 30), (-6, 30), (6, 30), (18, 30), (30, 30),
+        ];
+
+        let beehives = [
+            (-12, -18), (0, -18), (12, -18),
+            (-18, 0), (18, 0),
+            (-12, 18), (0, 18), (12, 18),
+        ];
+
+        let tubs = [
+            (-18, -12), (18, -12),
+            (-18, 12), (18, 12),
+            (0, -6), (0, 6),
+        ];
+
+        for (dx, dy) in blocks {
+            self.set_block_at((mid_x + dx) as usize, (mid_y + dy) as usize);
+        }
+
+        for (dx, dy) in beehives {
+            self.set_beehive_at((mid_x + dx) as usize, (mid_y + dy) as usize);
+        }
+
+        for (dx, dy) in tubs {
+            self.set_tub_at((mid_x + dx) as usize, (mid_y + dy) as usize);
         }
     }
 
