@@ -46,12 +46,16 @@ fn view(app: &App, model: &Model, frame: Frame) {
     let win = app.window_rect();
     let size = model.grid.size;
     let cell_size = win.w() / size  as f32;
-
+    let mut  index;
+    
     draw.background().color(LIGHTGRAY);
     draw.to_frame(app, &frame).unwrap();
+
     for y in 0..size {
         for x in 0..size {
-            if model.grid.grid[y][x] == 0 {
+            index = x + size * y;
+
+            if model.grid.grid[index] == 0 {
                 continue;
             }
 

@@ -1,14 +1,18 @@
-const SIZE: usize = 600;
+use std::usize;
+
+
+const SIZE: usize = 1000;
+
 
 pub struct Grid {
     pub size: usize,
-    pub grid: Box<[[u8; SIZE]; SIZE]>,
+    pub grid: Vec<u8>
 }
 impl Grid {
     pub fn new() -> Grid {
         Grid {
             size: SIZE,
-            grid: Box::new([[0; SIZE]; SIZE]),
+            grid: vec![0;SIZE*SIZE]
         }    
     }
 
@@ -29,7 +33,7 @@ impl Grid {
                 if n_x < 0 || n_x >= SIZE as isize || n_y < 0 || n_y >= SIZE as isize {
                     continue;
                 }
-                count += grid[n_y as usize][n_x as usize];
+                count += grid[n_x as usize + SIZE * n_y as usize];
             }
         }
 
@@ -40,7 +44,7 @@ impl Grid {
         for y in 0..SIZE {
             let mut row = String::with_capacity(SIZE * 2);
             for x in 0..SIZE {
-                row.push(if self.grid[y][x] == 0 { '.' } else { '#' });
+                row.push(if self.grid[x + SIZE * y] == 0 { '.' } else { '#' });
                 row.push(' ');
             }
             println!("{}", row);
@@ -48,23 +52,23 @@ impl Grid {
     }
 
     pub fn step(&mut self) {
-        let mut next = Box::new([[0; SIZE]; SIZE]);
+        let mut next = vec![0;SIZE * SIZE];
 
         for y in 0..SIZE {
             for x in 0..SIZE {
                 let count = self.check_sides(x as isize, y as isize);
 
-                let live = self.grid[y][x];
+                let live = self.grid[x + y *SIZE];
 
                 if live == 1 {
                     if count == 2 || count == 3 {
-                        next[y][x] = 1;
+                        next[x + y * SIZE] = 1;
                     } else {
-                        next[y][x] = 0
+                        next[x + y *SIZE] = 0
                     }
                 } else {
                     if count == 3 {
-                        next[y][x] = 1;
+                        next[x + y * SIZE] = 1;
                     }
                 }
             }
@@ -74,57 +78,65 @@ impl Grid {
         
     }
 
+    fn set_pixel(&mut self,x: usize,y: usize, value: u8){
+        self.grid[x + y * SIZE] = value
+    }
+
+    fn read_pixel(&self, x: usize, y: usize) -> u8{
+        self.grid[x + y * SIZE]
+    }
+
     pub fn set_glider(&mut self){
-        self.grid[1][2] = 1;
-        self.grid[2][3] = 1;
-        self.grid[3][1] = 1;
-        self.grid[3][2] = 1;
-        self.grid[3][3] = 1;
+        self.set_pixel(1, 2, 1);
+        self.set_pixel(2, 3, 1);
+        self.set_pixel(3, 1, 1);
+        self.set_pixel(3, 2, 1);
+        self.set_pixel(3, 3, 1);
     }
 
     pub fn set_blinker(&mut self){
-        self.grid[10][9] = 1;
-        self.grid[10][10] = 1;
-        self.grid[10][11] = 1;
+        self.set_pixel(9, 10, 1);
+        self.set_pixel(10, 10, 1);
+        self.set_pixel(11, 10, 1);
     }
 
     pub fn set_medusa(&mut self){
         let mid_x = self.size / 2;
         let mid_y = self.size / 2;
         let cells = [
-            (mid_y - 4, mid_x - 2),
-            (mid_y - 4, mid_x - 1),
-            (mid_y - 4, mid_x),
-            (mid_y - 4, mid_x + 1),
-            (mid_y - 4, mid_x + 2),
-            (mid_y - 3, mid_x - 3),
-            (mid_y - 3, mid_x + 3),
-            (mid_y - 2, mid_x - 3),
-            (mid_y - 2, mid_x - 1),
-            (mid_y - 2, mid_x),
-            (mid_y - 2, mid_x + 1),
-            (mid_y - 2, mid_x + 3),
-            (mid_y - 1, mid_x - 2),
-            (mid_y - 1, mid_x + 2),
-            (mid_y, mid_x - 2),
-            (mid_y + 1, mid_x - 2),
-            (mid_y + 2, mid_x - 3),
-            (mid_y + 2, mid_x - 1),
-            (mid_y + 2, mid_x + 1),
-            (mid_y + 2, mid_x + 3),
-            (mid_y + 3, mid_x - 3),
-            (mid_y + 3, mid_x - 1),
-            (mid_y + 3, mid_x + 1),
-            (mid_y + 3, mid_x + 3),
-            (mid_y + 4, mid_x - 4),
-            (mid_y + 4, mid_x - 2),
-            (mid_y + 4, mid_x),
-            (mid_y + 4, mid_x + 2),
-            (mid_y + 4, mid_x + 4),
+            (mid_x - 2, mid_y - 4),
+            (mid_x - 1, mid_y - 4),
+            (mid_x, mid_y - 4),
+            (mid_x + 1, mid_y - 4),
+            (mid_x + 2, mid_y - 4),
+            (mid_x - 3, mid_y - 3),
+            (mid_x + 3, mid_y - 3),
+            (mid_x - 3, mid_y - 2),
+            (mid_x - 1, mid_y - 2),
+            (mid_x, mid_y - 2),
+            (mid_x + 1, mid_y - 2),
+            (mid_x + 3, mid_y - 2),
+            (mid_x - 2, mid_y - 1),
+            (mid_x + 2, mid_y - 1),
+            (mid_x - 2, mid_y),
+            (mid_x - 2, mid_y + 1),
+            (mid_x - 3, mid_y + 2),
+            (mid_x - 1, mid_y + 2),
+            (mid_x + 1, mid_y + 2),
+            (mid_x + 3, mid_y + 2),
+            (mid_x - 3, mid_y + 3),
+            (mid_x - 1, mid_y + 3),
+            (mid_x + 1, mid_y + 3),
+            (mid_x + 3, mid_y + 3),
+            (mid_x - 4, mid_y + 4),
+            (mid_x - 2, mid_y + 4),
+            (mid_x, mid_y + 4),
+            (mid_x + 2, mid_y + 4),
+            (mid_x + 4, mid_y + 4),
         ];
 
-        for (y, x) in cells {
-            self.grid[y][x] = 1;
+        for (x, y) in cells {
+            self.set_pixel(x, y, 1);
         }
     }
 
