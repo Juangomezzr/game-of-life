@@ -2,7 +2,6 @@ use std::usize;
 use rayon::prelude::*;
 
 
-const SIZE: usize = 180;
 
 fn rules(count: u8, live: u8) -> u8{
     if live == 1 {
@@ -17,37 +16,42 @@ fn rules(count: u8, live: u8) -> u8{
         0
     }
 }
-
 pub struct Grid {
-    pub size: usize,
-    pub grid: Vec<u8>
+    pub grid: Vec<u8>,
+    pub w: usize,
+    pub h:usize,
+    pub size: usize
 }
 impl Grid {
-    pub fn new() -> Grid {
+    pub fn new(w:usize,h:usize) -> Grid {
         Grid {
-            size: SIZE,
-            grid: vec![0;SIZE*SIZE]
+            w:w,
+            h:h,
+            size:w*h,
+            grid: vec![0;w*h]
+            
         }    
     }
 
-    fn check_sides(grid: &[u8], x: isize, y: isize) -> u8 {
+    fn check_sides(&self,grid: &[u8], x: isize, y: isize) -> u8 {
         let mut count = 0;
         
         let start: (isize, isize) = (x - 1, y - 1);
 
         for i in 0..3 {
+            let n_y = start.1 + i;
             for j in 0..3 {
                 if i == 1 && j == 1 {
                     continue;
                 }
 
-                let n_x = start.0 + i;
-                let n_y = start.1 + j;
+                let n_x = start.0 + j;
+                
 
-                if n_x < 0 || n_x >= SIZE as isize || n_y < 0 || n_y >= SIZE as isize {
+                if n_x < 0 || n_x >= self.w as isize || n_y < 0 || n_y >= self.h as isize {
                     continue;
                 }
-                count += (grid[n_x as usize + SIZE * n_y as usize] > 0) as u8;
+                count += (grid[n_x as usize + self.w * n_y as usize] > 0) as u8;
             }
         }
 
@@ -55,10 +59,10 @@ impl Grid {
     }
 
     fn print_grid(&self) {
-        for y in 0..SIZE {
-            let mut row = String::with_capacity(SIZE * 2);
-            for x in 0..SIZE {
-                row.push(if self.grid[x + SIZE * y] == 0 { '.' } else { '#' });
+        for y in 0..self.h {
+            let mut row = String::with_capacity(self.size * 2);
+            for x in 0..self.w {
+                row.push(if self.grid[x + self.size * y] == 0 { '.' } else { '#' });
                 row.push(' ');
             }
             println!("{}", row);
@@ -67,14 +71,14 @@ impl Grid {
 
     pub fn step(&mut self) {
         let current = self.grid.clone();
-        let mut next = vec![0;SIZE * SIZE];
+        let mut next = vec![0;self.size];
 
-        next.par_chunks_mut(SIZE)
+        next.par_chunks_mut(self.w)
         .enumerate()
         .for_each(|(y, row)| {
-            for x in 0..SIZE {
-                let idx = x + y * SIZE;
-                let count = Self::check_sides(&current, x as isize, y as isize);
+            for x in 0..self.w {
+                let idx = x + y * self.w;
+                let count = self.check_sides(&current, x as isize, y as isize);
                 let live = current[idx];
 
 
@@ -87,7 +91,7 @@ impl Grid {
     }
 
     fn set_pixel(&mut self,x: usize,y: usize, value: u8){
-        self.grid[x + y * SIZE] = value
+        self.grid[x + self.w * y]  = value
     }
 
     fn set_block_at(&mut self, x: usize, y: usize) {
@@ -114,7 +118,7 @@ impl Grid {
     }
 
     fn read_pixel(&self, x: usize, y: usize) -> u8{
-        self.grid[x + y * SIZE]
+        self.grid[x + y * self.w]
     }
 
 
@@ -133,8 +137,8 @@ impl Grid {
     }
 
     pub fn set_medusa(&mut self){
-        let mid_x = self.size / 2;
-        let mid_y = self.size / 2;
+        let mid_x = self.w / 2;
+        let mid_y = self.h / 2;
         let cells = [
             (mid_x - 2, mid_y - 4),
             (mid_x - 1, mid_y - 4),
@@ -174,8 +178,8 @@ impl Grid {
     }
 
     pub fn set_stable_colony(&mut self) {
-        let mid_x = self.size as isize / 2;
-        let mid_y = self.size as isize / 2;
+        let mid_x = self.w as isize / 2;
+        let mid_y = self.h as isize / 2;
 
         let blocks = [
             (-30, -30), (-18, -30), (-6, -30), (6, -30), (18, -30), (30, -30),
