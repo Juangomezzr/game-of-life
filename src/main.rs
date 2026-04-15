@@ -21,15 +21,16 @@ struct Model {
 }
 
 fn model(app: &App) -> Model {
+    app.set_loop_mode(LoopMode::rate_fps(30.0));
     app.new_window()
         .maximized(true)
         .resizable(false)
         .view(view)
         .build()
         .unwrap();
-    app.set_loop_mode(LoopMode::rate_fps(30.0));
+    
 
-    let cell_size = 1.0;
+    let cell_size = 2.0;
 
     let grid = Grid::new(
         (app.window_rect().w() / cell_size) as usize,
