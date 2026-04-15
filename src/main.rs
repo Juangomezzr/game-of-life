@@ -14,7 +14,8 @@ struct Model {
     bg_color: Rgba<u8>,
     cell_size: f32,
     win: Rect,
-    texture: wgpu::Texture
+    texture: wgpu::Texture,
+    pixel_buffer: Vec<u8>,
 }
 
 fn model(app: &App) -> Model {
@@ -25,9 +26,8 @@ fn model(app: &App) -> Model {
         .view(view)
         .build()
         .unwrap();
-    
 
-    let cell_size = 2.0;
+    let cell_size = 1.0;
     let window = app.main_window();
     let win = window.rect();
 
@@ -47,6 +47,8 @@ fn model(app: &App) -> Model {
         grid.h as u32,
     );
 
+    let pixel_buffer = vec![0u8; (grid.w * grid.h * 4) as usize];
+
     Model {
         grid: grid,
         cell_pading: 0.0,
@@ -55,39 +57,29 @@ fn model(app: &App) -> Model {
         cell_size: cell_size,
         win: win,
         texture: texture,
+        pixel_buffer: pixel_buffer,
     }
 }
 
 fn update(app: &App, model: &mut Model, _update: Update) {
-    
     model.grid.step();
     model.grid.set_medusa();
 
-    model.texture = create_texture_from_grid(
-        app,
-        &model.grid.grid,
-        model.cell_color,
-        model.bg_color,
-        model.grid.w as u32,
-        model.grid.h as u32,
-    );
+    update_texture(model);
+    send_to_gpu(app, model);
 }
 
 fn view(app: &App, model: &Model, frame: Frame) {
-    
     let draw = app.draw();
     draw.to_frame(app, &frame).unwrap();
     // 1. Limpiamos el fondo
     draw.background().color(BLACK);
-
-    // 2. Obtenemos el tamaño REAL y actual de la ventana
 
     // 3. Dibujamos la textura directamente al tamaño de la ventana
     // (Por ahora le quitamos el filtro Nearest para asegurarnos de que se ve)
     texture_render(app, model);
     // 4. Mandamos el lienzo al monitor
     draw.to_frame(app, &frame).unwrap();
-    
 }
 /// Texture Logics
 fn create_texture_from_grid(
@@ -98,17 +90,13 @@ fn create_texture_from_grid(
     w: u32,
     h: u32,
 ) -> wgpu::Texture {
-    // from_fn recorre cada (x, y) de la imagen y nos pide que le devolvamos un color.
-
     let image_buffer = ImageBuffer::from_fn(w, h, |x, y| {
-        // Calculamos el índice en nuestra cuadrícula 1D
         let idx = (x + y * w) as usize;
         let cell = grid[idx];
 
         let color = if cell > 0 { cell_c } else { bg_c };
-    
+
         color
-        
 
         // Devolvemos el tipo Rgba, que por debajo es literalmente un array de 4 elementos: [u8; 4]
     });
@@ -118,7 +106,7 @@ fn create_texture_from_grid(
     wgpu::Texture::from_image(app, &dynamic_image)
 }
 
-fn texture_render(app:&App, model: &Model) {
+fn texture_render(app: &App, model: &Model) {
     let win = app.window_rect();
     let draw = app.draw();
 
@@ -130,4 +118,50 @@ fn texture_render(app:&App, model: &Model) {
     draw.sampler(sampler_desc)
         .texture(&model.texture)
         .w_h(win.w(), win.h());
+}
+
+fn update_texture(model: &mut Model) {
+    for (cell, pixel) in model
+        .grid
+        .grid
+        .iter()
+        .zip(model.pixel_buffer.chunks_exact_mut(4))
+    {
+        let color = if *cell > 0 {
+            model.cell_color
+        } else {
+            model.bg_color
+        };
+        pixel[0] = color[0]; // R
+        pixel[1] = color[1]; // G
+        pixel[2] = color[2]; // B
+        pixel[3] = color[3]; // A
+    }
+}
+
+fn send_to_gpu(app: &App, model: &Model) {
+    let texture_size = wgpu::Extent3d {
+        width: model.grid.w as u32,
+        height: model.grid.h as u32,
+        depth_or_array_layers: 1,
+    };
+
+    app.main_window().queue().write_texture(
+        // Destino: La textura que ya creamos en `fn model`
+        wgpu::ImageCopyTexture {
+            texture: &model.texture,
+            mip_level: 0,
+            origin: wgpu::Origin3d::ZERO,
+            aspect: wgpu::TextureAspect::All,
+        },
+        // Origen: Nuestro array de bytes actualizado
+        &model.pixel_buffer,
+        // Formato: Le explicamos a la gráfica cómo leer nuestro array
+        wgpu::ImageDataLayout {
+            offset: 0,
+            bytes_per_row: Some(4 * model.grid.w as u32),
+            rows_per_image: Some(model.grid.h as u32),
+        },
+        texture_size,
+    );
 }

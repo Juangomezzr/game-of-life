@@ -10,7 +10,7 @@ fn rules(count: u8, live: u8) -> u8{
         } else { 
             0 
         }
-    } else if count == 3 {
+    } else if count == 2 {
         1
     } else {
         0
