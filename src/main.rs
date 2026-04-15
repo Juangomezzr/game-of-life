@@ -1,29 +1,23 @@
 mod grid;
 use grid::*;
+use nannou::image::{DynamicImage, ImageBuffer, Rgba};
 use nannou::prelude::*;
-use nannou::image::{DynamicImage, ImageBuffer};
-use nannou::wgpu::Texture;
 fn main() {
-    /*/
-    for step_i in 0..10 {
-        println!("Paso {step_i}");
-        grid.step();
-        println!("----------------");
-    }
-    */
-
     nannou::app(model).update(update).run()
 }
 
 struct Model {
     grid: Grid,
     cell_pading: f32,
-    cell_color: Rgba,
+    cell_color: Rgba<u8>,
+    bg_color: Rgba<u8>,
     cell_size: f32,
+    win: Rect,
+    texture: wgpu::Texture
 }
 
 fn model(app: &App) -> Model {
-    app.set_loop_mode(LoopMode::rate_fps(30.0));
+    app.set_loop_mode(LoopMode::rate_fps(10.0));
     app.new_window()
         .maximized(true)
         .resizable(false)
@@ -31,6 +25,7 @@ fn model(app: &App) -> Model {
         .build()
         .unwrap();
     
+
     let cell_size = 2.0;
     let window = app.main_window();
     let win = window.rect();
@@ -39,61 +34,86 @@ fn model(app: &App) -> Model {
         (win.w() / cell_size) as usize,
         (win.h() / cell_size) as usize,
     );
+    let cell_color = Rgba([255, 0, 0, 255]);
+    let bg_color = Rgba([0, 0, 0, 255]);
 
-
+    let texture = create_texture_from_grid(
+        app,
+        &grid.grid,
+        cell_color,
+        bg_color,
+        grid.w as u32,
+        grid.h as u32,
+    );
 
     Model {
         grid: grid,
         cell_pading: 0.0,
-        cell_color: rgba(1.0, 0.0, 0.0, 1.0),
-        cell_size: cell_size
-
+        cell_color: cell_color,
+        bg_color: bg_color,
+        cell_size: cell_size,
+        win: win,
+        texture: texture,
     }
 }
 
-fn update(_app: &App, model: &mut Model, _update: Update) {
+fn update(app: &App, model: &mut Model, _update: Update) {
     model.grid.step();
     model.grid.set_medusa();
+
+    model.texture = create_texture_from_grid(
+        app,
+        &model.grid.grid,
+        model.cell_color,
+        model.bg_color,
+        model.grid.w as u32,
+        model.grid.h as u32,
+    );
 }
 
 fn view(app: &App, model: &Model, frame: Frame) {
     let draw = app.draw();
-    
+
     draw.background().color(BLACK);
     draw.to_frame(app, &frame).unwrap();
 
-    
-    draw_grid(app, &draw, model);
+    texture_render(model, &draw);
     draw.to_frame(app, &frame).unwrap();
 }
+/// Texture Logics
+fn create_texture_from_grid(
+    app: &App,
+    grid: &[u8],
+    cell_c: Rgba<u8>,
+    bg_c: Rgba<u8>,
+    w: u32,
+    h: u32,
+) -> wgpu::Texture {
+    // from_fn recorre cada (x, y) de la imagen y nos pide que le devolvamos un color.
 
-fn draw_grid(app: &App, draw: &Draw, model: &Model){
-    let win = app.window_rect();
-    let cell_size = model.cell_size;
-    let color = model.cell_color;
-    let mut index;
+    let image_buffer = ImageBuffer::from_fn(w, h, |x, y| {
+        // Calculamos el índice en nuestra cuadrícula 1D
+        let idx = (x + y * w) as usize;
+        let cell = grid[idx];
 
-    //Draw grid
+        let color = if cell > 0 { cell_c } else { bg_c };
+        color
 
+        // Devolvemos el tipo Rgba, que por debajo es literalmente un array de 4 elementos: [u8; 4]
+    });
 
-    for y in 0..model.grid.h {
-        for x in 0..model.grid.w {
-            index = x + model.grid.w * y;
-            if model.grid.grid[index] == 0 {
-                continue;
-            }
+    let dynamic_image = DynamicImage::ImageRgba8(image_buffer);
 
-            let px = win.left() + cell_size * x as f32 + cell_size / 2.0;
-            let py = win.top() - cell_size * y as f32 - cell_size / 2.0;
-
-           
-
-            draw.rect()
-                .x_y(px, py)
-                .w_h(cell_size - model.cell_pading, cell_size - model.cell_pading)
-                .color(color);
-        }
-    }
-
+    wgpu::Texture::from_image(app, &dynamic_image)
 }
 
+fn texture_render(model: &Model, draw: &Draw) {
+    let sampler_desc = wgpu::SamplerBuilder::new()
+        .mag_filter(wgpu::FilterMode::Nearest)
+        .min_filter(wgpu::FilterMode::Nearest)
+        .into_descriptor();
+
+    draw.sampler(sampler_desc)
+        .texture(&model.texture)
+        .w_h(model.win.w(), model.win.h());
+}
