@@ -16,6 +16,7 @@ fn rules(count: u8, live: u8) -> u8{
         0
     }
 }
+
 pub struct Grid {
     pub grid: Vec<u8>,
     pub w: usize,
@@ -58,17 +59,6 @@ impl Grid {
         count
     }
 
-    fn print_grid(&self) {
-        for y in 0..self.h {
-            let mut row = String::with_capacity(self.size * 2);
-            for x in 0..self.w {
-                row.push(if self.grid[x + self.size * y] == 0 { '.' } else { '#' });
-                row.push(' ');
-            }
-            println!("{}", row);
-        }
-    }
-
     pub fn step(&mut self) {
         let current = self.grid.clone();
         let mut next = vec![0;self.size];
@@ -93,6 +83,19 @@ impl Grid {
     fn set_pixel(&mut self,x: usize,y: usize, value: u8){
         self.grid[x + self.w * y]  = value
     }
+
+    
+    fn print_grid(&self) {
+        for y in 0..self.h {
+            let mut row = String::with_capacity(self.size * 2);
+            for x in 0..self.w {
+                row.push(if self.grid[x + self.size * y] == 0 { '.' } else { '#' });
+                row.push(' ');
+            }
+            println!("{}", row);
+        }
+    }
+
 
     fn set_block_at(&mut self, x: usize, y: usize) {
         self.set_pixel(x, y, 1);

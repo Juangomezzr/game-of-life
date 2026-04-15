@@ -1,6 +1,8 @@
 mod grid;
 use grid::*;
 use nannou::prelude::*;
+use nannou::image::{DynamicImage, ImageBuffer};
+use nannou::wgpu::Texture;
 fn main() {
     /*/
     for step_i in 0..10 {
@@ -17,7 +19,7 @@ struct Model {
     grid: Grid,
     cell_pading: f32,
     cell_color: Rgba,
-    cell_size: f32
+    cell_size: f32,
 }
 
 fn model(app: &App) -> Model {
@@ -29,13 +31,16 @@ fn model(app: &App) -> Model {
         .build()
         .unwrap();
     
-
     let cell_size = 2.0;
+    let window = app.main_window();
+    let win = window.rect();
 
     let grid = Grid::new(
-        (app.window_rect().w() / cell_size) as usize,
-        (app.window_rect().h() / cell_size) as usize,
+        (win.w() / cell_size) as usize,
+        (win.h() / cell_size) as usize,
     );
+
+
 
     Model {
         grid: grid,
@@ -53,20 +58,27 @@ fn update(_app: &App, model: &mut Model, _update: Update) {
 
 fn view(app: &App, model: &Model, frame: Frame) {
     let draw = app.draw();
-    let win = app.window_rect();
-
-
-    let cell_size = model.cell_size;
-    let mut index;
-
+    
     draw.background().color(BLACK);
     draw.to_frame(app, &frame).unwrap();
 
+    
+    draw_grid(app, &draw, model);
+    draw.to_frame(app, &frame).unwrap();
+}
+
+fn draw_grid(app: &App, draw: &Draw, model: &Model){
+    let win = app.window_rect();
+    let cell_size = model.cell_size;
+    let color = model.cell_color;
+    let mut index;
+
     //Draw grid
+
+
     for y in 0..model.grid.h {
         for x in 0..model.grid.w {
             index = x + model.grid.w * y;
-
             if model.grid.grid[index] == 0 {
                 continue;
             }
@@ -74,7 +86,7 @@ fn view(app: &App, model: &Model, frame: Frame) {
             let px = win.left() + cell_size * x as f32 + cell_size / 2.0;
             let py = win.top() - cell_size * y as f32 - cell_size / 2.0;
 
-            let color = model.cell_color;
+           
 
             draw.rect()
                 .x_y(px, py)
@@ -83,5 +95,5 @@ fn view(app: &App, model: &Model, frame: Frame) {
         }
     }
 
-    draw.to_frame(app, &frame).unwrap();
 }
+
