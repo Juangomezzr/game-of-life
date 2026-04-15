@@ -1,6 +1,4 @@
 mod grid;
-use std::thread::{Thread, sleep};
-use std::time::Duration;
 
 use grid::*;
 use nannou::image::{DynamicImage, ImageBuffer, Rgba};
@@ -20,7 +18,7 @@ struct Model {
 }
 
 fn model(app: &App) -> Model {
-    app.set_loop_mode(LoopMode::rate_fps(10.0));
+    app.set_loop_mode(LoopMode::rate_fps(30.0));
     app.new_window()
         .maximized(true)
         .resizable(false)
@@ -29,7 +27,7 @@ fn model(app: &App) -> Model {
         .unwrap();
     
 
-    let cell_size = 20.0;
+    let cell_size = 2.0;
     let window = app.main_window();
     let win = window.rect();
 
@@ -61,6 +59,7 @@ fn model(app: &App) -> Model {
 }
 
 fn update(app: &App, model: &mut Model, _update: Update) {
+    
     model.grid.step();
     model.grid.set_medusa();
 
@@ -75,17 +74,19 @@ fn update(app: &App, model: &mut Model, _update: Update) {
 }
 
 fn view(app: &App, model: &Model, frame: Frame) {
-    let dur = Duration::from_millis(10);
-    sleep(dur);
-    let draw = app.draw();
-
-    draw.background().color(BLACK);
     
-
-    texture_render(model, &draw);
+    let draw = app.draw();
     draw.to_frame(app, &frame).unwrap();
+    // 1. Limpiamos el fondo
+    draw.background().color(BLACK);
 
+    // 2. Obtenemos el tamaño REAL y actual de la ventana
 
+    // 3. Dibujamos la textura directamente al tamaño de la ventana
+    // (Por ahora le quitamos el filtro Nearest para asegurarnos de que se ve)
+    texture_render(app, model);
+    // 4. Mandamos el lienzo al monitor
+    draw.to_frame(app, &frame).unwrap();
     
 }
 /// Texture Logics
@@ -117,7 +118,10 @@ fn create_texture_from_grid(
     wgpu::Texture::from_image(app, &dynamic_image)
 }
 
-fn texture_render(model: &Model, draw: &Draw) {
+fn texture_render(app:&App, model: &Model) {
+    let win = app.window_rect();
+    let draw = app.draw();
+
     let sampler_desc = wgpu::SamplerBuilder::new()
         .mag_filter(wgpu::FilterMode::Nearest)
         .min_filter(wgpu::FilterMode::Nearest)
@@ -125,5 +129,5 @@ fn texture_render(model: &Model, draw: &Draw) {
 
     draw.sampler(sampler_desc)
         .texture(&model.texture)
-        .w_h(model.win.w(), model.win.h());
+        .w_h(win.w(), win.h());
 }
