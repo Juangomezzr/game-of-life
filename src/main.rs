@@ -1,4 +1,7 @@
 mod grid;
+use std::thread::{Thread, sleep};
+use std::time::Duration;
+
 use grid::*;
 use nannou::image::{DynamicImage, ImageBuffer, Rgba};
 use nannou::prelude::*;
@@ -26,7 +29,7 @@ fn model(app: &App) -> Model {
         .unwrap();
     
 
-    let cell_size = 2.0;
+    let cell_size = 20.0;
     let window = app.main_window();
     let win = window.rect();
 
@@ -72,13 +75,18 @@ fn update(app: &App, model: &mut Model, _update: Update) {
 }
 
 fn view(app: &App, model: &Model, frame: Frame) {
+    let dur = Duration::from_millis(10);
+    sleep(dur);
     let draw = app.draw();
 
     draw.background().color(BLACK);
-    draw.to_frame(app, &frame).unwrap();
+    
 
     texture_render(model, &draw);
     draw.to_frame(app, &frame).unwrap();
+
+
+    
 }
 /// Texture Logics
 fn create_texture_from_grid(
@@ -97,7 +105,9 @@ fn create_texture_from_grid(
         let cell = grid[idx];
 
         let color = if cell > 0 { cell_c } else { bg_c };
+    
         color
+        
 
         // Devolvemos el tipo Rgba, que por debajo es literalmente un array de 4 elementos: [u8; 4]
     });
