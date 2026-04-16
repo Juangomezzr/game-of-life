@@ -27,7 +27,7 @@ fn model(app: &App) -> Model {
         .build()
         .unwrap();
 
-    let cell_size = 1.0;
+    let cell_size = 0.75;
     let window = app.main_window();
     let win = window.rect();
 
@@ -81,6 +81,7 @@ fn view(app: &App, model: &Model, frame: Frame) {
     // 4. Mandamos el lienzo al monitor
     draw.to_frame(app, &frame).unwrap();
 }
+
 /// Texture Logics
 fn create_texture_from_grid(
     app: &App,
