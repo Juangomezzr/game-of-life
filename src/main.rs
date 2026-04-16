@@ -2,6 +2,7 @@ mod grid;
 mod simulation;                                                                     
 mod renderer;                                                                       
 mod controller; 
+mod effects;
 
 use controller::Controller;
 use nannou::prelude::*;
@@ -24,7 +25,7 @@ fn model(app: &App) -> Model {
         .unwrap();
 
     let win = app.main_window().rect();
-    let cell_size = 0.75;
+    let cell_size = 4.0;
 
     let width = (win.w() / cell_size) as usize;
     let height = (win.h() / cell_size) as usize;

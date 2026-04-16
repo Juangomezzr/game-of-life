@@ -1,7 +1,8 @@
 
 use nannou::image::{DynamicImage, ImageBuffer, Rgba};                               
 use nannou::prelude::*;                                                             
-use crate::simulation::Simulation;                                                  
+use crate::effects::Effect;
+use crate::{Model};                                                 
                                                                                     
 pub struct Renderer {                                                               
     pub texture: wgpu::Texture,                                                     
@@ -10,6 +11,7 @@ pub struct Renderer {
     bg_color: Rgba<u8>,
     width: u32,
     height: u32,
+    effect: Effect
 }
 
 impl Renderer {
@@ -22,7 +24,7 @@ impl Renderer {
         let image_buffer = ImageBuffer::from_fn(width, height, |_, _| bg_color);
         let dynamic_image = DynamicImage::ImageRgba8(image_buffer);
         let texture = wgpu::Texture::from_image(app, &dynamic_image);
-
+        let effect = Effect::new();
         Renderer {
             texture,
             pixel_buffer,
@@ -30,19 +32,16 @@ impl Renderer {
             bg_color,
             width,
             height,
+            effect
         }
     }
 
+    ///Actualiza el pixel_buffer que sobrescribira la textura en gpu.
     pub fn update_texture(&mut self, app: &App, grid: &[u8]) {
        
-        for (cell, pixel) in grid.iter().zip(self.pixel_buffer.chunks_exact_mut(4))
-{           let color = if *cell > 0 { self.cell_color } else { self.bg_color };
-            pixel[0] = color[0];
-            pixel[1] = color[1];
-          
-            pixel[2] = color[2];
-            pixel[3] = color[3];
-        }
+       
+       self.effect.apply(app, grid, &mut self.pixel_buffer);
+        
     }
 
     pub fn send_to_gpu(&self, app: &App) {
@@ -80,4 +79,5 @@ impl Renderer {
             .texture(&self.texture)
             .w_h(win.w(), win.h());
     }
+
 }

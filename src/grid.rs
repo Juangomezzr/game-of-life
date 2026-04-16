@@ -4,12 +4,12 @@ use rayon::prelude::*;
 
 fn rules(count: u8, live: u8) -> u8{
     if live == 1 {
-        if count == 3 || count == 3 { 
+        if count == 2 || count == 3 { 
             1 
         } else { 
             0 
         }
-    } else if count == 2 {
+    } else if count == 3 {
         1
     } else {
         0
