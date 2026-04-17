@@ -10,9 +10,9 @@ pub struct Controller{
 }
 
 impl Controller {
-    pub fn new(app: &App, width: usize, height: usize) -> Self {
+    pub fn new(app: &App, width: usize, height: usize, render_module: String) -> Self {
         let simulation = Simulation::new(width, height);
-        let renderer = Renderer::new(app, width as u32, height as u32);
+        let renderer = Renderer::new(app, width as u32, height as u32,render_module);
 
         Controller {
             simulation,
