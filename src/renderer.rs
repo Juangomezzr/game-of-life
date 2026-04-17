@@ -1,18 +1,16 @@
+use crate::Model;
+use crate::effects::Effect;
+use nannou::image::{DynamicImage, ImageBuffer, Rgba};
+use nannou::prelude::*;
 
-use nannou::image::{DynamicImage, ImageBuffer, Rgba};                               
-use nannou::prelude::*;                                                             
-use crate::effects::{Effect};
-use crate::{Model};                                                 
-                                                                                    
-pub struct Renderer {                                                               
-    pub texture: wgpu::Texture,                                                     
-    pixel_buffer: Vec<u8>,                                                          
+pub struct Renderer {
+    pub texture: wgpu::Texture,
+    pixel_buffer: Vec<u8>,
     cell_color: Rgba<u8>,
     bg_color: Rgba<u8>,
     width: u32,
     height: u32,
-    effect: Effect
-
+    effect: Effect,
 }
 
 impl Renderer {
@@ -33,16 +31,13 @@ impl Renderer {
             bg_color,
             width,
             height,
-            effect
+            effect,
         }
     }
 
     ///Actualiza el pixel_buffer que sobrescribira la textura en gpu.
     pub fn update_texture(&mut self, app: &App, grid: &[u8]) {
-       
-       self.effect.apply(app, grid, &mut self.pixel_buffer); 
-
-
+        self.effect.r.update(app, grid, &mut self.pixel_buffer);
     }
 
     pub fn send_to_gpu(&self, app: &App) {
@@ -70,15 +65,6 @@ impl Renderer {
     }
 
     pub fn render(&self, app: &App, draw: &Draw) {
-        let win = app.window_rect();
-        let sampler_desc = wgpu::SamplerBuilder::new()
-            .mag_filter(wgpu::FilterMode::Nearest)
-            .min_filter(wgpu::FilterMode::Nearest)
-            .into_descriptor();
-
-        draw.sampler(sampler_desc)
-            .texture(&self.texture)
-            .w_h(win.w(), win.h());
+        self.effect.r.render(app, draw, &self.texture);
     }
-
 }

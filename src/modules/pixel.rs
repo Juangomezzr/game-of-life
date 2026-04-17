@@ -1,4 +1,4 @@
-use nannou::{App, image::Rgba};
+use nannou::{App, Draw, draw::primitive::texture, image::Rgba, wgpu};
 
 use crate::render_effects::RenderEffect;
 
@@ -25,12 +25,20 @@ impl RenderEffect for PixelEffect{
             pixel[3] = color[3];
         }
     }
-    fn render(&self, _app: &App) {
-        
+    fn render(&self, app: &App, draw: &Draw, texture: &wgpu::Texture) {
+        let win = app.window_rect();
+        let sampler_desc = wgpu::SamplerBuilder::new()
+            .mag_filter(wgpu::FilterMode::Nearest)
+            .min_filter(wgpu::FilterMode::Nearest)
+            .mipmap_filter(wgpu::FilterMode::Nearest)
+            .into_descriptor();
+
+        draw.sampler(sampler_desc)
+            .texture(texture)
+            .w_h(win.w(), win.h());
+
     }
-    fn apply(&mut self, app: &App, grid: &[u8], buffer: &mut [u8]) {
-        self.update(app, grid, buffer);
-    }
+ 
 
     fn get_id(&self) -> &str {
         &self.id

@@ -8,7 +8,7 @@ use nannou::App;
 
 pub struct Effect {
     module: String,
-    r: Box<dyn RenderEffect>
+    pub r: Box<dyn RenderEffect>
 }
 
 impl Effect {
@@ -31,9 +31,7 @@ impl Effect {
             
         }
     }
-    pub fn apply(&mut self, app: &App, grid: &[u8], buffer: &mut [u8]){
-        self.r.apply(app, grid, buffer);
-    }
+  
 }
 
 

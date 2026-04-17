@@ -1,67 +1,92 @@
 use crate::render_effects::RenderEffect;
-use nannou::App;
+use nannou::prelude::*;
 
+// 1. La entidad matemática de nuestra chispa
+struct PuntoVectorial {
+    pos: Vec2,
+    vel: Vec2,
+    vida: f32,
+}
+
+// 2. El módulo principal
 pub struct Particles {
     id: String,
+    vectores: Vec<PuntoVectorial>,
 }
 
 impl Particles {
     pub fn new() -> Self {
-        Self { id: "Particles".to_string() }
+        Self { 
+            id: "Particles".to_string(),
+            vectores: Vec::new(),
+        }
     }
 }
 
 impl RenderEffect for Particles {
     
-    fn apply(&mut self, app: &App, grid: &[u8], buffer: &mut [u8]) {
-        self.update(app, grid, buffer);
-    }
+
     
     fn get_id(&self) -> &str {
         &self.id
     }
     
-    fn render(&self, _app: &App) {}
-    
-    fn update(&mut self, app: &App, grid: &[u8], buffer: &mut [u8]) {
+    // ==========================================
+    // FASE 1: MATEMÁTICAS (Update)
+    // ==========================================
+    fn update(&mut self, app: &App, grid: &[u8], _buffer: &mut [u8]) {
         let win = app.window_rect();
         let width = win.w() as u32;
         let height = win.h() as u32;
 
-        // MAGIA RUST: Juntamos la celda del grid y el pixel del buffer, y además sacamos el índice (i)
-        for (i, (&cell, pixel)) in grid.iter().zip(buffer.chunks_exact_mut(4)).enumerate() {
-            
-            // Si la célula de Conway está VIVA (mayor que 0)
-            if cell > 0 {
+        // 1. Envejecemos y movemos los vectores que ya existen
+        for p in &mut self.vectores {
+            p.pos += p.vel;
+            p.vida -= 0.05; // Velocidad a la que se apaga la chispa
+        }
+        
+        // Limpiamos la memoria de las partículas muertas
+        self.vectores.retain(|p| p.vida > 0.0);
+
+        // 2. Leemos la cuadrícula y generamos nuevas chispas
+        for (i, &cell) in grid.iter().enumerate() {
+            // Genera partículas solo si la célula está viva y ganamos una "lotería" del 15%
+            if cell > 0 && random_f32() < 0.15 {
+                
                 let x = (i as u32) % width;
                 let y = (i as u32) / width;
 
-                let norm_x = x as f32 / width as f32;
-                let norm_y = y as f32 / height as f32;
+                // Traducimos el índice de la cuadrícula a coordenadas Nannou
+                let screen_x = map_range(x, 0, width, win.left(), win.right());
+                
+                // Mapeamos la Y. Nannou tiene Y positivo arriba, la cuadrícula suele tener Y positivo abajo.
+                let screen_y = map_range(y, 0, height, win.top(), win.bottom());
 
-                // Aplicamos el color basado en su posición
-                pixel[0] = (norm_x * 255.0) as u8; // Rojo de izquierda a derecha
-                pixel[1] = (norm_y * 255.0) as u8; // Verde de arriba a abajo
-                pixel[2] = 120;                    // Azul fijo
-                pixel[3] = 255;                    // Alpha
-            } 
-            // Si la célula está MUERTA
-            else {
-                // OPCIÓN A: Fondo negro instantáneo
-                /*
-                pixel[0] = 0;
-                pixel[1] = 0;
-                pixel[2] = 0;
-                pixel[3] = 255;
-                */
-
-                // OPCIÓN B: Efecto de estela suave (Recomendado, se ve increíble con los colores)
-                pixel[0] = pixel[0].saturating_sub(15);
-                pixel[1] = pixel[1].saturating_sub(15);
-                pixel[2] = pixel[2].saturating_sub(15);
-                // El Alpha siempre en 255 para que wgpu no haga cosas raras con transparencias
-                pixel[3] = 255; 
+                self.vectores.push(PuntoVectorial {
+                    pos: vec2(screen_x, screen_y),
+                    // Vector de velocidad: se mueven un poco a los lados, y bastante hacia arriba
+                    vel: vec2(random_range(-1.0, 1.0), random_range(1.0, 3.0)), 
+                    vida: 1.0,
+                });
             }
+        }
+    }
+
+    // ==========================================
+    // FASE 2: DIBUJO (Render)
+    // ==========================================
+    fn render(&self,_app: &App, draw: &Draw,_texture: &wgpu::Texture) {
+        
+        // No tocamos la matriz de píxeles, solo le decimos a la GPU qué dibujar
+        for p in &self.vectores {
+            // Creamos un color de neón (Cyan) que se vuelve transparente al morir
+            let color = hsla(0.5, 1.0, 0.6, p.vida); 
+
+            // Dibujamos nuestra partícula vectorial
+            draw.ellipse()
+                .xy(p.pos)
+                .w_h(4.0, 4.0)
+                .color(color);
         }
     }
 }
